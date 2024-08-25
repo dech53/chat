@@ -9,6 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"log"
 	"net/http"
+	"socket/dao"
 	"socket/model"
 	"socket/utils"
 	"strconv"
@@ -30,6 +31,9 @@ var id = 0
 var mu sync.Mutex
 
 func Wsfc(c *gin.Context) {
+	username := c.Param("username")
+	user := dao.GetUserByPattern("username", username)
+	id = user.ID
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
@@ -119,5 +123,21 @@ func ClientTask() {
 			}
 			mu.Unlock()
 		}
+	}
+}
+func Register(c *gin.Context) {
+	username := c.PostForm("username")
+	password := c.PostForm("password")
+	if username == "" || password == "" {
+		utils.ResponseFail(c, "用户名或密码为空", 400)
+	}
+	flag := dao.AddUser(&model.User{
+		Username: username,
+		Password: password,
+	})
+	if flag {
+		utils.ResponseSuccess(c, "添加用户成功", 200)
+	} else {
+		utils.ResponseFail(c, "添加用户失败", 400)
 	}
 }
